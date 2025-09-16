@@ -103,8 +103,12 @@ export async function waitForFlutterServer(
    port: number,
    packageName: string,
 ) {
+   const server = this.isDesktop
+      ? this.caps?.address ?? '127.0.0.1'
+      : '127.0.0.1';
+
    const proxy = new JWProxy({
-      server: '127.0.0.1',
+      server: server,
       port: port,
       base: '',
       reqBasePath: '',
@@ -121,6 +125,7 @@ export async function fetchFlutterServerPort(
       portReleaseCallback,
       packageName,
       isIosSimulator,
+      isDesktop,
    }: {
       udid: string;
       systemPort?: number | null;
@@ -128,11 +133,30 @@ export async function fetchFlutterServerPort(
       portReleaseCallback?: PortReleaseCallback;
       packageName: string;
       isIosSimulator: boolean;
+      isDesktop : boolean;
    },
 ): Promise<number | null> {
    const [startPort, endPort] = DEVICE_PORT_RANGE as [number, number];
    let devicePort = startPort;
    let forwardedPort = systemPort;
+
+   // In the case of Mac or Windows, we will search for the server betwen the start and endPorts not worrying about
+   // port forwarding.
+   if (isDesktop){
+      for (let port = startPort; port <= endPort; port++) {
+         try {
+            this.log.info(`Checking Flutter server on port ${port}`);
+            await waitForFlutterServer.bind(this)(port, packageName);
+            this.log.info(`Flutter server found on port ${port}`);
+            return port;
+         } catch (err) {
+            this.log.debug(`Failed to connect on port ${port}: ${err.message}`);
+            if (port === endPort) {
+               throw new Error(`Could not connect to Flutter server. Checked ports between: ${startPort}-${endPort}`);
+            }
+         }
+      }
+   }
 
    if (isIosSimulator && (systemPort || devicePort)) {
       try {

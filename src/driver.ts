@@ -10,6 +10,8 @@ type FlutterDriverConstraints = typeof desiredCapConstraints;
 // @ts-ignore
 import { XCUITestDriver } from 'appium-xcuitest-driver';
 import { AndroidUiautomator2Driver } from 'appium-uiautomator2-driver';
+import { WindowsDriver } from 'appium-windows-driver';
+import { Mac2Driver } from 'appium-mac2-driver';
 import { createSession as createSessionMixin } from './session';
 import {
    findElOrEls,
@@ -55,7 +57,7 @@ const WEBVIEW_NO_PROXY = [
 
 export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
    // @ts-ignore
-   public proxydriver: XCUITestDriver | AndroidUiautomator2Driver;
+   public proxydriver: XCUITestDriver | AndroidUiautomator2Driver | WindowsDriver | Mac2Driver;
    public flutterPort: number | null | undefined;
    private internalCaps: DriverCaps<FlutterDriverConstraints> | undefined;
    public proxy: JWProxy | undefined;
@@ -71,6 +73,8 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
    elementEnabled = elementEnabled;
    setValue = setValue;
    clear = clear;
+   isDesktop: boolean = false;
+
    constructor(args: any, shouldValidateCaps: boolean) {
       super(args, shouldValidateCaps);
       this.desiredCapConstraints = desiredCapConstraints;
@@ -89,6 +93,10 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       ];
    }
 
+   /**
+     * Map of custom `flutter:` commands to their respective methods and parameters.
+     * This defines the custom commands that can be executed via `driver.executeScript`.
+     */
    static executeMethodMap = {
       'flutter: doubleClick': {
          command: 'doubleClick',
@@ -167,6 +175,13 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       },
    };
 
+   /**
+     * Performs a double-click gesture on a Flutter element.
+     * @param origin - The origin of the double click.
+     * @param offset - The offset from the origin.
+     * @param locator - The locator to find the element.
+     * @returns The result of the double click command.
+     */
    async doubleClick(origin: any, offset: any, locator: any) {
       return this.proxy?.command(
          `/session/:sessionId/appium/gestures/double_click`,
@@ -177,9 +192,14 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
             locator,
          },
       );
-      //console.log('DoubleTap', value, JSON.parse(JSON.stringify(value)).elementId);
    }
 
+   /**
+     * Injects a base64 encoded image into the device's media store.
+     * Grants necessary permissions for Android before injecting.
+     * @param base64Image - The base64 string of the image to inject.
+     * @returns The result of the image injection command.
+     */
    async injectImage(base64Image: string) {
       async function grantPermissions(permission: string) {
          await this.proxydriver.execute('mobile: changePermissions', {
@@ -203,6 +223,11 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       });
    }
 
+   /**
+     * Activates a previously injected image.
+     * @param imageId - The ID of the image to activate.
+     * @returns The result of the image activation command.
+     */
    async activateInjectedImage(imageId: string) {
       return this.proxy?.command(
          `/session/:sessionId/activate_inject_image`,
@@ -213,6 +238,14 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       );
    }
 
+   /**
+     * Executes a command, handling context switching between Flutter and native/web views.
+     * If the command is a Flutter command and the context is `NATIVE_APP`, it's handled by the super class.
+     * Otherwise, it's proxied to the appropriate driver.
+     * @param command - The command to execute.
+     * @param args - The arguments for the command.
+     * @returns The result of the command execution.
+     */
    async executeCommand(command: any, ...args: any) {
       if (
          this.currentContext === this.NATIVE_CONTEXT_NAME &&
@@ -232,6 +265,8 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       return await this.proxydriver.executeCommand(command as string, ...args);
    }
 
+   //This may not be required by us.
+   //It basically is to switch to the webview context which we may not encounter.
    private handleContextSwitch(command: string, args: any[]): void {
       if (command === 'setContext') {
          const isWebviewContext =
@@ -252,10 +287,17 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       }
    }
 
+   //This code defines a "proxy avoid list" — 
+   //a list of WebDriver routes that should not be proxied when the driver is in a WebView context
    public getProxyAvoidList(): RouteMatcher[] {
       return WEBVIEW_NO_PROXY;
    }
 
+       /**
+     * Creates a new session, initializing the proxy driver and the Flutter server proxy.
+     * @param args - Session creation arguments.
+     * @returns A promise that resolves to the session ID and capabilities.
+     */
    public async createSession(
       ...args: any[]
    ): Promise<DefaultCreateSessionResult<FlutterDriverConstraints>> {
@@ -269,6 +311,10 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       );
 
       this.internalCaps = caps;
+      
+      const platform = this.internalCaps?.platformName?.toLowerCase();
+      const isDesktop = platform === 'mac' || platform === 'windows';
+
       /**
        * To support parallel execution in iOS simulators
        * flutterServerPort need to be passed as lauch argument using appium:processArguments
@@ -281,10 +327,13 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
          caps,
          ...JSON.parse(JSON.stringify(args)),
       );
-      const packageName =
-         this.proxydriver instanceof AndroidUiautomator2Driver
-            ? this.proxydriver.opts.appPackage!
-            : this.proxydriver.opts.bundleId!;
+      const packageName = this.proxydriver instanceof AndroidUiautomator2Driver
+                           ? this.proxydriver.opts.appPackage!
+                           : this.proxydriver instanceof WindowsDriver || this.proxydriver instanceof Mac2Driver
+                              ? this.internalCaps.packageName
+                              : this.proxydriver.opts.bundleId!;
+      
+      this.log.info(`The package name is ${packageName}`)
 
       const isIosSimulator =
          this.proxydriver instanceof XCUITestDriver &&
@@ -294,6 +343,8 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
          portForwardCallback?: PortForwardCallback;
          portReleaseCallback?: PortReleaseCallback;
       } = {};
+
+      // Configure port forwarding callbacks based on the platform.
       if (this.proxydriver instanceof AndroidUiautomator2Driver) {
          portcallbacks.portForwardCallback = async (
             _: string,
@@ -325,12 +376,14 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
          (isIosSimulator ? null : await getFreePort());
       const udid = this.proxydriver.opts.udid!;
 
+      // Fetch the Flutter server port and establish the connection.
       this.flutterPort = await fetchFlutterServerPort.bind(this)({
          udid,
          packageName,
          ...portcallbacks,
          systemPort,
          isIosSimulator,
+         isDesktop,
       });
 
       if (!this.flutterPort) {
@@ -346,9 +399,18 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
          port: this.flutterPort,
       });
 
+      // Create a session on the Flutter proxy server.
       await this.proxy.command('/session', 'POST', { capabilities: caps });
       return sessionCreated;
    }
+
+   /**
+     * Waits for a Flutter element to become absent.
+     * @param element - The element to wait for.
+     * @param locator - The locator to find the element.
+     * @param timeout - The timeout in milliseconds.
+     * @returns The result of the command.
+     */
    async waitForElementToBeGone(element: any, locator: any, timeout: number) {
       return this.proxy?.command(
          `/session/:sessionId/element/wait/absent`,
@@ -361,6 +423,13 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       );
    }
 
+   /**
+     * Waits for a Flutter element to become visible.
+     * @param element - The element to wait for.
+     * @param locator - The locator to find the element.
+     * @param timeout - The timeout in milliseconds.
+     * @returns The result of the command.
+     */
    async waitForElementToBeVisible(
       element: any,
       locator: any,
@@ -377,6 +446,13 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       );
    }
 
+   /**
+     * Performs a long-press gesture on a Flutter element.
+     * @param origin - The origin of the long press.
+     * @param offset - The offset from the origin.
+     * @param locator - The locator to find the element.
+     * @returns The result of the long-press command.
+     */
    async longPress(origin: any, offset: any, locator: any) {
       return this.proxy?.command(
          `/session/:sessionId/appium/gestures/long_press`,
@@ -389,6 +465,12 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       );
    }
 
+   /**
+     * Performs a drag-and-drop gesture between two Flutter elements.
+     * @param source - The source element.
+     * @param target - The target element.
+     * @returns The result of the drag-and-drop command.
+     */
    async dragAndDrop(source: any, target: any) {
       return this.proxy?.command(
          `/session/:sessionId/appium/gestures/drag_drop`,
@@ -400,6 +482,17 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       );
    }
 
+   /**
+     * Scrolls a scrollable view until a specific element becomes visible.
+     * @param finder - The finder for the target element.
+     * @param scrollView - The scroll view to perform the scroll on.
+     * @param delta - The delta to scroll by.
+     * @param maxScrolls - The maximum number of scrolls to perform.
+     * @param settleBetweenScrollsTimeout - The timeout between scrolls.
+     * @param dragDuration - The duration of each drag.
+     * @param scrollDirection - The direction to scroll in.
+     * @returns The found element.
+     */
    async scrollTillVisible(
       finder: any,
       scrollView: any,
@@ -431,6 +524,13 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       return element;
    }
 
+   /**
+     * Executes a script. If the script starts with 'flutter:', it's a custom Flutter command.
+     * Otherwise, it's passed to the underlying proxy driver.
+     * @param script - The script to execute.
+     * @param args - The arguments for the script.
+     * @returns The result of the script execution.
+     */
    async execute(script: any, args: any) {
       if (script.startsWith('flutter:')) {
          return await this.executeMethod(script, args);
@@ -455,6 +555,9 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       return this.proxyWebViewActive;
    }
 
+   /**
+     * Deletes the session, cleaning up resources like port forwards.
+     */
    async deleteSession() {
       if (
          this.proxydriver instanceof AndroidUiautomator2Driver &&
@@ -467,6 +570,13 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       await super.deleteSession();
    }
 
+   /**
+     * Launches or activates an application.
+     * @param appId - The bundle ID or app package to launch.
+     * @param args - Arguments to pass to the app.
+     * @param environment - Environment variables to set.
+     * @returns The response from the `launchApp` or `activateApp` command.
+     */
    async mobilelaunchApp(appId: string, args: string[], environment: any) {
       let activateAppResponse;
       this.currentContext = this.NATIVE_CONTEXT_NAME;
@@ -509,6 +619,13 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       return activateAppResponse;
    }
 
+   /**
+     * Renders a Flutter widget tree, optionally filtering by widget type, text, or key.
+     * @param widgetType - Optional widget type to filter by.
+     * @param text - Optional text to filter by.
+     * @param key - Optional key to filter by.
+     * @returns The rendered tree or filtered elements.
+     */
    async renderTree(widgetType?: string, text?: string, key?: string) {
       const body: Record<string, string> = {};
 

@@ -4,6 +4,8 @@ import { PLATFORM } from './platform';
 import { startAndroidSession } from './android';
 import { startIOSSession } from './iOS';
 import type { DefaultCreateSessionResult } from '@appium/types';
+import { startWindowsSession } from './windows'
+import { startMacSession } from './mac';
 
 export async function createSession(
    this: AppiumFlutterDriver,
@@ -28,6 +30,11 @@ export async function createSession(
             this.proxydriver.denyInsecure = this.denyInsecure;
             this.proxydriver.allowInsecure = this.allowInsecure;
             break;
+         case PLATFORM.WINDOWS:
+            this.proxydriver = await startWindowsSession.bind(this)(...args);
+            break;
+         case PLATFORM.MAC:
+            this.proxydriver = await startMacSession.bind(this)(...args);
          default:
             this.log.errorWithException(
                `Unsupported platformName: ${caps.platformName}. ` +
