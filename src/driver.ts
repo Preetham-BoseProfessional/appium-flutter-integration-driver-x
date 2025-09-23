@@ -175,6 +175,12 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
             optional: ['widgetType', 'text', 'key'],
          },
       },
+      'flutter: clickAt':{
+         command: 'clickAt',
+         params: {
+            required: ['offset']
+         }
+      }
    };
 
    /**
@@ -647,5 +653,15 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
 
       const url = `/session/${this.sessionId}/element/render_tree`;
       return this.proxy?.command(url, 'POST', body);
+   }
+
+   async clickAt(offset : any) {
+      return this.proxy?.command(
+         `/session/:sessionId/click_at`,
+         'POST',
+         {
+           offset
+         }
+      );
    }
 }
