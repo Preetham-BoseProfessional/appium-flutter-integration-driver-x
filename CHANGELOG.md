@@ -1,3 +1,45 @@
+## [2.0.0](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/compare/v1.5.1...v2.0.0) (2025-09-19)
+
+### ⚠ BREAKING CHANGES
+
+* - Following changes are added
+- Updated all dependencies to point to appium3
+- This version will work only with appium 3 and above
+
+### Features
+
+* support for appium3 ([#146](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/issues/146)) ([c2fcab9](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/commit/c2fcab9ee83c5d463de75bf089b75b9530d04bfc))
+
+## [1.5.1](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/compare/v1.5.0...v1.5.1) (2025-09-19)
+
+### Reverts
+
+* Revert "feat: Appium 3 support ([#142](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/issues/142))" ([#145](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/issues/145)) ([fbb22db](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/commit/fbb22dbb5a7ca17f2813b22e64517c4a406e42e6))
+
+## [1.5.0](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/compare/v1.4.1...v1.5.0) (2025-09-19)
+
+### Features
+
+* Appium 3 support ([#142](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/issues/142)) ([2979048](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/commit/297904836572161b2d552a87261441a360b6d9db))
+
+## [1.4.1](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/compare/v1.4.0...v1.4.1) (2025-09-17)
+
+### Bug Fixes
+
+* Added support for descendant within scroll ([#141](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/issues/141)) ([fbae4c3](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/commit/fbae4c3bcfbda27f86fe476a83a91d76292b4853))
+
+## [1.4.0](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/compare/v1.3.1...v1.4.0) (2025-09-16)
+
+### Features
+
+* Support descendant ([#140](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/issues/140)) ([cd16886](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/commit/cd16886f015e18e3570ab5fa729b7ab989725307)), closes [#126](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/issues/126)
+
+## [1.3.1](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/compare/v1.3.0...v1.3.1) (2025-09-12)
+
+### Bug Fixes
+
+* Add support to get elementRect ([#134](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/issues/134)) ([4b1f451](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/commit/4b1f451f2bc181850be30db0b6b4092a6ad2851f))
+
 ## [1.3.0](https://github.com/AppiumTestDistribution/appium-flutter-integration-driver/compare/v1.2.0...v1.3.0) (2025-08-18)
 
 ### Features

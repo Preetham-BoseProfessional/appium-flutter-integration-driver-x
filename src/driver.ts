@@ -23,6 +23,7 @@ import {
    setValue,
    clear,
    ELEMENT_CACHE,
+   getElementRect,
 } from './commands/element';
 import {
    attachAppLaunchArguments,
@@ -67,6 +68,7 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
    findElOrEls = findElOrEls;
    getText = getText;
    getAttribute = getAttribute;
+   getElementRect = getElementRect;
    elementDisplayed = elementDisplayed;
    elementEnabled = elementEnabled;
    setValue = setValue;
@@ -88,6 +90,8 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
          '-ios class chain',
          ...FLUTTER_LOCATORS, //to support backward compatibility
          ...FLUTTER_LOCATORS.map((locator) => `-flutter ${locator}`),
+         '-flutter descendant',
+         '-flutter ancestor',
       ];
    }
 
@@ -250,6 +254,10 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
          isFlutterDriverCommand(command)
       ) {
          return await super.executeCommand(command, ...args);
+      } else {
+         this.log.info(
+            `Executing the command: ${command} with args: ${args} and flutterCommand ${isFlutterDriverCommand(command)}`,
+         );
       }
 
       this.handleContextSwitch(command, args);
@@ -560,7 +568,7 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
          // @ts-ignore
          await this.proxydriver.adb.removePortForward(this.flutterPort);
       }
-      await this.proxydriver?.deleteSession();
+      await this.proxydriver?.deleteSession(this.sessionId);
       await super.deleteSession();
    }
 
@@ -608,7 +616,11 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
          this.flutterPort,
       );
       await this.proxy?.command('/session', 'POST', {
-         capabilities: this.proxydriver.originalCaps,
+         capabilities: Object.assign(
+            {},
+            this.proxydriver.originalCaps?.alwaysMatch,
+            this.proxydriver.originalCaps?.firstMatch[0],
+         ),
       });
       return activateAppResponse;
    }

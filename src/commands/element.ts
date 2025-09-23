@@ -27,7 +27,13 @@ export async function findElOrEls(
    } else {
       elementBody = {
          strategy,
-         selector,
+         selector: ['-flutter descendant', '-flutter ancestor'].includes(
+            strategy,
+         )
+            ? _.isString(selector)
+               ? JSON.parse(selector)
+               : selector
+            : selector,
          context,
       };
    }
@@ -54,6 +60,14 @@ export async function click(this: AppiumFlutterDriver, element: string) {
 export async function getText(this: AppiumFlutterDriver, elementId: string) {
    const driver = ELEMENT_CACHE.get(elementId);
    return String(await driver.command(`/element/${elementId}/text`, 'GET', {}));
+}
+
+export async function getElementRect(
+   this: AppiumFlutterDriver,
+   elementId: string,
+) {
+   const driver = ELEMENT_CACHE.get(elementId);
+   return await driver.command(`/element/${elementId}/rect`, 'GET', {});
 }
 
 export async function elementEnabled(
