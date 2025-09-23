@@ -8,7 +8,7 @@ export const config: WebdriverIO.Config = {
       {
          // capabilities for local Appium web tests on an Android Emulator
          platformName: 'Android',
-         'appium:automationName': 'FlutterIntegration',
+         'appium:automationName': 'flutter-x',
          'appium:orientation': 'PORTRAIT',
          'appium:app': process.env.APP_PATH,
          'appium:newCommandTimeout': 240,

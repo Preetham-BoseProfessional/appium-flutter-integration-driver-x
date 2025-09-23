@@ -7,7 +7,7 @@ export const config: WebdriverIO.Config = {
       {
          // capabilities for local Appium web tests on an Android Emulator
          platformName: 'iOS',
-         'appium:automationName': 'FlutterIntegration',
+         'appium:automationName': 'flutter-x',
          'appium:orientation': 'PORTRAIT',
          'appium:udid': process.env.UDID,
          'appium:app': process.env.APP_PATH,
