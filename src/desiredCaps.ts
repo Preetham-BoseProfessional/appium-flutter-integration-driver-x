@@ -27,6 +27,6 @@ export const desiredCapConstraints = {
       isString: true,
    },
    packageName: {
-      isString:true,
+      isString: true,
    },
 } as const;

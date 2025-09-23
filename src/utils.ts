@@ -104,7 +104,7 @@ export async function waitForFlutterServer(
    packageName: string,
 ) {
    const server = this.isDesktop
-      ? this.caps?.address ?? '127.0.0.1'
+      ? (this.caps?.address ?? '127.0.0.1')
       : '127.0.0.1';
 
    const proxy = new JWProxy({
@@ -133,7 +133,7 @@ export async function fetchFlutterServerPort(
       portReleaseCallback?: PortReleaseCallback;
       packageName: string;
       isIosSimulator: boolean;
-      isDesktop : boolean;
+      isDesktop: boolean;
    },
 ): Promise<number | null> {
    const [startPort, endPort] = DEVICE_PORT_RANGE as [number, number];
@@ -142,7 +142,7 @@ export async function fetchFlutterServerPort(
 
    // In the case of Mac or Windows, we will search for the server betwen the start and endPorts not worrying about
    // port forwarding.
-   if (isDesktop){
+   if (isDesktop) {
       for (let port = startPort; port <= endPort; port++) {
          try {
             this.log.info(`Checking Flutter server on port ${port}`);
@@ -152,7 +152,9 @@ export async function fetchFlutterServerPort(
          } catch (err) {
             this.log.debug(`Failed to connect on port ${port}: ${err.message}`);
             if (port === endPort) {
-               throw new Error(`Could not connect to Flutter server. Checked ports between: ${startPort}-${endPort}`);
+               throw new Error(
+                  `Could not connect to Flutter server. Checked ports between: ${startPort}-${endPort}`,
+               );
             }
          }
       }

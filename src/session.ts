@@ -4,7 +4,7 @@ import { PLATFORM } from './platform';
 import { startAndroidSession } from './android';
 import { startIOSSession } from './iOS';
 import type { DefaultCreateSessionResult } from '@appium/types';
-import { startWindowsSession } from './windows'
+import { startWindowsSession } from './windows';
 import { startMacSession } from './mac';
 
 export async function createSession(
