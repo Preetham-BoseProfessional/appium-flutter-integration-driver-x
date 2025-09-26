@@ -342,8 +342,7 @@ export class AppiumFlutterDriver extends BaseDriver<FlutterDriverConstraints> {
       const packageName =
          this.proxydriver instanceof AndroidUiautomator2Driver
             ? this.proxydriver.opts.appPackage!
-            : this.proxydriver instanceof WindowsDriver ||
-                this.proxydriver instanceof Mac2Driver
+            : this.proxydriver instanceof WindowsDriver
               ? this.internalCaps.packageName
               : this.proxydriver.opts.bundleId!;
 
